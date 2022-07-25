@@ -1,11 +1,26 @@
 import sys
 import getopt
 import downloader
+import signal
+
+cancel_downloading = False
+
+
+def handler(signum, frame):
+    msg = "Ctrl+c was pressed. Do you really want to exit? y/n"
+    print(msg)
+    res = input()
+    global cancel_downloading
+    cancel_downloading = res == 'y'
+
+
+signal.signal(signal.SIGINT, handler)
 
 
 def main(argv):
     input_file = ''
     output_dir = ''
+    global cancel_downloading
 
     try:
         opts, args = getopt.getopt(argv, 'hi:o:', ['ifile=', 'odir='])
@@ -24,7 +39,7 @@ def main(argv):
     try:
         with open(input_file, 'r') as fp:
             line = fp.readline()
-            while line:
+            while line and cancel_downloading == False:
                 line = line.strip()
                 downloader.download(line, output_dir=output_dir)
                 line = fp.readline()
