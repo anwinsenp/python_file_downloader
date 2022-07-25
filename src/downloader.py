@@ -1,4 +1,5 @@
 import requests
+from clint.textui import progress
 
 
 def getFilename_fromURL(url):
@@ -6,9 +7,9 @@ def getFilename_fromURL(url):
 
 
 def download(url, output_dir):
-    print(f"downloading {url} ...")
+    print(f"downloading {url}")
     try:
-        r = requests.get(url, allow_redirects=True)
+        r = requests.get(url, stream=True)
     except requests.exceptions.RequestException as e:
         raise SystemExit(e)
 
@@ -18,6 +19,12 @@ def download(url, output_dir):
         output_dir = output_dir[:-1] if output_dir[-1] == '/' else output_dir
         try:
             with open(f"{output_dir}/{filename}", 'wb') as f:
-                f.write(r.content)
+                total_length = int(r.headers.get('content-length'))
+                for chunk in progress.bar(
+                        r.iter_content(chunk_size=1024),
+                        expected_size=(total_length/1024) + 1):
+                    if chunk:
+                        f.write(chunk)
+                        f.flush()
         except IOError as e:
             raise SystemExit(e)
